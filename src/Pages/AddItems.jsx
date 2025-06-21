@@ -119,7 +119,11 @@ export default function AddItem() {
                         type="file"
                         accept="image/*"
                         variant="flushed"
-                        onChange={(e) => setCoverImage(e.target.files[0])}
+                        onChange={(e) => {
+                            console.log("COVER FILE:", e.target.files[0]);
+                            setCoverImage(e.target.files[0]);
+                        }}
+
                     />
                 </FormControl>
                 <FormControl>
@@ -136,8 +140,8 @@ export default function AddItem() {
                 </FormControl>
 
                 <Box
-                    as="form"              
-                    onSubmit={handleAddItems} 
+                    as="form"
+                    onSubmit={handleAddItems}
                     maxW="2xl"
                     mx="auto"
                     mt={10}
@@ -154,7 +158,7 @@ export default function AddItem() {
 
                     <VStack spacing={5}>
                         <Button
-                            type="submit"           
+                            type="submit"
                             width="full"
                             colorScheme="blue"
                             size="lg"
