@@ -1,215 +1,193 @@
-import { Box, Heading, VStack, FormControl, FormLabel, Input, Textarea, Select, Button, useColorModeValue } from "@chakra-ui/react";
+import {
+  Box,
+  Heading,
+  VStack,
+  FormControl,
+  FormLabel,
+  Input,
+  Textarea,
+  Select,
+  Button,
+  useColorModeValue,
+} from "@chakra-ui/react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
-
-import { db } from "../Firebase/firebaseConfig.js"
-import { doc, getDoc, setDoc } from "firebase/firestore";
-
+import { db, storage } from "../Firebase/firebaseConfig.js";
+import { collection, addDoc } from "firebase/firestore";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { v4 as uuidv4 } from "uuid";
 
 export default function AddItem() {
-    const bg = useColorModeValue("blue.100", "white");
-    const border = useColorModeValue("blue.900", "blue.700");
+  const bg = useColorModeValue("blue.100", "white");
+  const border = useColorModeValue("blue.900", "blue.700");
 
-    const [itemName, setItemName] = useState("");
-    const [selectedItem, setSelectedItem] = useState("");
-    const [discription, setDiscription] = useState("");
-    const [coverImage, setCoverImage] = useState(null);
-    const [additionalImage, setAdditionalImage] = useState([]);
-    const [success, setSuccess] = useState(false);
-    const [loading, setLoading] = useState(false);
+  const [itemName, setItemName] = useState("");
+  const [selectedItem, setSelectedItem] = useState("");
+  const [discription, setDiscription] = useState("");
+  const [coverImage, setCoverImage] = useState(null);
+  const [additionalImage, setAdditionalImage] = useState([]);
+  const [success, setSuccess] = useState(false);
+  const [loading, setLoading] = useState(false);
 
+  const uploadFile = async (file) => {
+    const fileRef = ref(storage, `itemImages/${uuidv4()}-${file.name}`);
+    await uploadBytes(fileRef, file);
+    return getDownloadURL(fileRef);
+  };
 
-    const fileToBase64 = (file) =>
-        new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.readAsDataURL(file);
-            reader.onload = () => resolve(reader.result);
-            reader.onerror = (error) => reject(error);
-        });
+  const handleAddItems = async (e) => {
+    e.preventDefault();
+    if (!itemName || !selectedItem || !discription || !coverImage) {
+      alert("Please fill all required fields.");
+      return;
+    }
 
+    setLoading(true);
 
-    const handleAddItems = async (e) => {
-        e.preventDefault();
-        if (!itemName || !selectedItem || !discription || !coverImage) {
-            alert("Please fill all required fields.");
-            return;
-        }
+    try {
+      const coverURL = await uploadFile(coverImage);
+      const additionalURLs = await Promise.all(
+        additionalImage.map(uploadFile)
+      );
 
-        setLoading(true);
+      const newItem = {
+        itemName,
+        selectedItem,
+        discription,
+        coverImage: coverURL,
+        additionalImage: additionalURLs,
+      };
 
-        const coverBase64 = await fileToBase64(coverImage);
-        const additionalBase64 = await Promise.all(
-            additionalImage.map(fileToBase64)
-        );
+      await addDoc(collection(db, "ItemsCollection"), newItem);
 
-        const newItem = {
-            itemName,
-            selectedItem,
-            discription,
-            coverImage: coverBase64,
-            additionalImage: additionalBase64,
-        };
+      setSuccess(true);
+      setItemName("");
+      setSelectedItem("");
+      setDiscription("");
+      setCoverImage(null);
+      setAdditionalImage([]);
+    } catch (error) {
+      console.error("Firebase Add Error:", error);
+    }
 
-        const docRef = doc(db, "ItemsCollection", "itemsData");
+    setLoading(false);
+  };
 
-        try {
-            const docSnap = await getDoc(docRef);
-            let existingItems = [];
+  return (
+    <Box
+      maxW="2xl"
+      mx="auto"
+      mt={10}
+      p={8}
+      bg={bg}
+      borderRadius="xl"
+      border="1px solid"
+      borderColor={border}
+      boxShadow="lg"
+    >
+      <Heading size="lg" mb={6} textAlign="center" color="blue.600">
+        Add New Item
+      </Heading>
 
-            if (docSnap.exists()) {
-                existingItems = docSnap.data().items || [];
-            }
-
-            const updatedItems = [...existingItems, newItem];
-
-            await setDoc(docRef, { items: updatedItems });
-
-            console.log("Item added successfully to Firebase.");
-            setSuccess(true);
-            setLoading(false);
-        } catch (error) {
-            console.error("Firebase Add Error:", error);
-        }
-
-        setItemName("");
-        setSelectedItem("");
-        setDiscription("");
-        setCoverImage(null);
-        setAdditionalImage([]);
-    };
-
-
-
-    return (
-        <Box
-            maxW="2xl"
-            mx="auto"
-            mt={10}
-            p={8}
-            bg={bg}
-            borderRadius="xl"
-            border="1px solid"
-            borderColor={border}
-            boxShadow="lg"
-        >
-            <Heading size="lg" mb={6} textAlign="center" color="blue.600">
-                Add New Item
-            </Heading>
-
-            <VStack spacing={5}>
-                <FormControl isRequired>
-                    <FormLabel fontWeight="semibold" color="gray.600">
-                        Item Name
-                    </FormLabel>
-                    <Input
-                        placeholder="Enter item name"
-                        focusBorderColor="blue.400"
-                        value={itemName}
-                        onChange={(e) => setItemName(e.target.value)}
-                    />
-                </FormControl>
-                <FormControl isRequired>
-                    <FormLabel fontWeight="semibold" color="gray.600">
-                        Item Type
-                    </FormLabel>
-                    <Select
-                        placeholder="Select item type"
-                        focusBorderColor="blue.400"
-                        value={selectedItem}
-                        onChange={(e) => setSelectedItem(e.target.value)}
-                    >
-                        <option value="shirt">Shirt</option>
-                        <option value="pant">Pant</option>
-                        <option value="shoes">Shoes</option>
-                        <option value="sports">Sports Gear</option>
-                        <option value="other">other</option>
-                    </Select>
-                </FormControl>
-                <FormControl isRequired>
-                    <FormLabel fontWeight="semibold" color="gray.600">
-                        Description
-                    </FormLabel>
-                    <Textarea
-                        placeholder="Enter item description"
-                        resize="vertical"
-                        focusBorderColor="blue.400"
-                        value={discription}
-                        onChange={(e) => setDiscription(e.target.value)}
-                    />
-                </FormControl>
-                <FormControl isRequired>
-                    <FormLabel fontWeight="semibold" color="gray.600">
-                        Cover Image
-                    </FormLabel>
-                    <Input
-                        type="file"
-                        accept="image/*"
-                        variant="flushed"
-                        onChange={(e) => {
-                            console.log("COVER FILE:", e.target.files[0]);
-                            setCoverImage(e.target.files[0]);
-                        }}
-
-                    />
-                </FormControl>
-                <FormControl>
-                    <FormLabel fontWeight="semibold" color="gray.600">
-                        Additional Images
-                    </FormLabel>
-                    <Input
-                        type="file"
-                        accept="image/*"
-                        multiple
-                        variant="flushed"
-                        onChange={(e) => setAdditionalImage(Array.from(e.target.files))}
-                    />
-                </FormControl>
-
-                <Box
-                    as="form"
-                    onSubmit={handleAddItems}
-                    maxW="2xl"
-                    mx="auto"
-                    mt={10}
-                    p={8}
-                    bg={bg}
-                    borderRadius="xl"
-                    border="1px solid"
-                    borderColor={border}
-                    boxShadow="lg"
-                    
-                >
-                    <Heading size="lg" mb={6} textAlign="center" color="blue.600">
-                        Add New Item
-                    </Heading>
-
-                    <VStack spacing={5}>
-                        <Button
-                            type="submit"
-                            width="full"
-                            colorScheme="blue"
-                            size="lg"
-                            fontWeight="bold"
-                            shadow="md"
-                            _hover={{ bg: "blue.600" }}
-                            isLoading={loading}          
-                    loadingText="Adding Item..."
-                        >
-                            Add Item
-                        </Button>
-
-                        {success && (
-                            <Box mt="4" textAlign="center" color="green.500" fontWeight="semibold">
-                                ✅ Item added successfully!
-                                <Button as={Link} to="/viewitems" ml="4" size="sm" colorScheme="teal">
-                                    View Items
-                                </Button>
-                            </Box>
-                        )}
-                    </VStack>
-                </Box>
-
-            </VStack>
-        </Box>
-    );
+      <form onSubmit={handleAddItems}>
+        <VStack spacing={5}>
+          <FormControl isRequired>
+            <FormLabel fontWeight="semibold" color="gray.600">
+              Item Name
+            </FormLabel>
+            <Input
+              placeholder="Enter item name"
+              focusBorderColor="blue.400"
+              value={itemName}
+              onChange={(e) => setItemName(e.target.value)}
+            />
+          </FormControl>
+          <FormControl isRequired>
+            <FormLabel fontWeight="semibold" color="gray.600">
+              Item Type
+            </FormLabel>
+            <Select
+              placeholder="Select item type"
+              focusBorderColor="blue.400"
+              value={selectedItem}
+              onChange={(e) => setSelectedItem(e.target.value)}
+            >
+              <option value="shirt">Shirt</option>
+              <option value="pant">Pant</option>
+              <option value="shoes">Shoes</option>
+              <option value="sports">Sports Gear</option>
+              <option value="other">Other</option>
+            </Select>
+          </FormControl>
+          <FormControl isRequired>
+            <FormLabel fontWeight="semibold" color="gray.600">
+              Description
+            </FormLabel>
+            <Textarea
+              placeholder="Enter item description"
+              resize="vertical"
+              focusBorderColor="blue.400"
+              value={discription}
+              onChange={(e) => setDiscription(e.target.value)}
+            />
+          </FormControl>
+          <FormControl isRequired>
+            <FormLabel fontWeight="semibold" color="gray.600">
+              Cover Image
+            </FormLabel>
+            <Input
+              type="file"
+              accept="image/*"
+              variant="flushed"
+              onChange={(e) => setCoverImage(e.target.files[0])}
+            />
+          </FormControl>
+          <FormControl>
+            <FormLabel fontWeight="semibold" color="gray.600">
+              Additional Images
+            </FormLabel>
+            <Input
+              type="file"
+              accept="image/*"
+              multiple
+              variant="flushed"
+              onChange={(e) => setAdditionalImage(Array.from(e.target.files))}
+            />
+          </FormControl>
+          <Button
+            type="submit"
+            width="full"
+            colorScheme="blue"
+            size="lg"
+            fontWeight="bold"
+            shadow="md"
+            _hover={{ bg: "blue.600" }}
+            isLoading={loading}
+            loadingText="Adding Item..."
+          >
+            Add Item
+          </Button>
+          {success && (
+            <Box
+              mt="4"
+              textAlign="center"
+              color="green.500"
+              fontWeight="semibold"
+            >
+              ✅ Item added successfully!
+              <Button
+                as={Link}
+                to="/viewitems"
+                ml="4"
+                size="sm"
+                colorScheme="teal"
+              >
+                View Items
+              </Button>
+            </Box>
+          )}
+        </VStack>
+      </form>
+    </Box>
+  );
 }

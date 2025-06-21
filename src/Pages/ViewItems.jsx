@@ -16,7 +16,8 @@ import { DeleteIcon } from "@chakra-ui/icons";
 import { Link } from "react-router-dom";
 import ItemModal from "@/Components/ItemModal";
 import { collection, doc, getDoc, setDoc, deleteDoc } from "firebase/firestore";
-import { db } from "../Firebase/firebaseConfig.js";
+import { ref, deleteObject } from "firebase/storage";
+import { db, storage } from "../Firebase/firebaseConfig.js";
 import { useEffect, useState } from "react";
 
 export default function ViewItems() {
@@ -42,29 +43,38 @@ export default function ViewItems() {
       } catch (error) {
         console.error("Error fetching items:", error);
       }
-    }
+    };
 
     fetchItems();
-  }, [])
-
-
+  }, []);
 
   const handleDeleteItem = async (indexToDelete) => {
-  try {
-    const docRef = doc(db, "ItemsCollection", "itemsData");
-    const docSnap = await getDoc(docRef);
-    if (docSnap.exists()) {
-      const existingItems = docSnap.data().items || [];
-      const updatedItems = existingItems.filter((_, index) => index !== indexToDelete);
+    try {
+      const docRef = doc(db, "ItemsCollection", "itemsData");
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        const existingItems = docSnap.data().items || [];
+        const itemToDelete = existingItems[indexToDelete];
 
-      await setDoc(docRef, { items: updatedItems });
-      setItems(updatedItems);
+        // Delete images from Firebase Storage
+        if (itemToDelete.coverImagePath) {
+          await deleteObject(ref(storage, itemToDelete.coverImagePath));
+        }
+        if (itemToDelete.additionalImagePaths) {
+          for (const path of itemToDelete.additionalImagePaths) {
+            await deleteObject(ref(storage, path));
+          }
+        }
+
+        const updatedItems = existingItems.filter((_, index) => index !== indexToDelete);
+
+        await setDoc(docRef, { items: updatedItems });
+        setItems(updatedItems);
+      }
+    } catch (error) {
+      console.error("Error deleting item:", error);
     }
-  } catch (error) {
-    console.error("Error deleting item:", error);
-  }
-};
-
+  };
 
   return (
     <Box minH="100vh" bg={bg} py={10} px={{ base: 4, md: 10 }}>
@@ -115,7 +125,7 @@ export default function ViewItems() {
               }}
             />
             <Image
-              src={item.coverImage}
+              src={item.coverImageURL}
               alt={item.itemName}
               width="100%"
               height="200px"
