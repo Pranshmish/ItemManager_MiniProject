@@ -1,19 +1,11 @@
 import {
-  Box,
-  Heading,
-  VStack,
-  FormControl,
-  FormLabel,
-  Input,
-  Textarea,
-  Select,
-  Button,
-  useColorModeValue,
+  Box, Heading, VStack, FormControl, FormLabel, Input,
+  Textarea, Select, Button, useColorModeValue
 } from "@chakra-ui/react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { db } from "../Firebase/firebaseConfig.js";
-import { collection, addDoc } from "firebase/firestore";
+import { db } from "../Firebase/firebaseConfig";
+import { doc, getDoc, setDoc } from "firebase/firestore";
 
 export default function AddItem() {
   const bg = useColorModeValue("blue.100", "white");
@@ -36,7 +28,6 @@ export default function AddItem() {
 
   const handleAddItems = async (e) => {
     e.preventDefault();
-
     if (!itemName || !selectedItem || !description || !coverImage) {
       alert("Please fill all required fields.");
       return;
@@ -45,63 +36,51 @@ export default function AddItem() {
     setLoading(true);
     try {
       const coverBase64 = await fileToBase64(coverImage);
+    const newItem = {
+  itemName,
+  itemType: selectedItem, // Rename here!
+  description,            // Fix typo from discription
+  coverImage: coverBase64,
+};
 
-      const newItem = {
-        itemName,
-        itemType: selectedItem,
-        description,
-        coverImage: coverBase64,
-        createdAt: new Date(),
-      };
+      const docRef = doc(db, "ItemsCollection", "itemsData");
+      const docSnap = await getDoc(docRef);
 
-      await addDoc(collection(db, "ItemsCollection"), newItem);
+      let existingItems = [];
+      if (docSnap.exists()) {
+        existingItems = docSnap.data().items || [];
+      }
 
+      const updatedItems = [...existingItems, newItem];
+      await setDoc(docRef, { items: updatedItems });
+
+      console.log("✅ Item added to Firebase");
       setSuccess(true);
+    } catch (error) {
+      console.error("🔥 Firebase Add Error:", error);
+    } finally {
+      setLoading(false);
       setItemName("");
       setSelectedItem("");
       setDescription("");
       setCoverImage(null);
-    } catch (error) {
-      console.error("Firebase Add Error:", error);
-      alert("Failed to add item.");
     }
-    setLoading(false);
   };
 
   return (
-    <Box
-      maxW="2xl"
-      mx="auto"
-      mt={10}
-      p={8}
-      bg={bg}
-      borderRadius="xl"
-      border="1px solid"
-      borderColor={border}
-      boxShadow="lg"
-    >
+    <Box maxW="2xl" mx="auto" mt={10} p={8} bg={bg} borderRadius="xl" border="1px solid" borderColor={border} boxShadow="lg">
       <Heading size="lg" mb={6} textAlign="center" color="blue.600">
         Add New Item
       </Heading>
-
       <form onSubmit={handleAddItems}>
         <VStack spacing={5}>
           <FormControl isRequired>
             <FormLabel>Item Name</FormLabel>
-            <Input
-              value={itemName}
-              onChange={(e) => setItemName(e.target.value)}
-              placeholder="Enter item name"
-            />
+            <Input value={itemName} onChange={(e) => setItemName(e.target.value)} />
           </FormControl>
-
           <FormControl isRequired>
             <FormLabel>Item Type</FormLabel>
-            <Select
-              placeholder="Select item type"
-              value={selectedItem}
-              onChange={(e) => setSelectedItem(e.target.value)}
-            >
+            <Select placeholder="Select item type" value={selectedItem} onChange={(e) => setSelectedItem(e.target.value)}>
               <option value="shirt">Shirt</option>
               <option value="pant">Pant</option>
               <option value="shoes">Shoes</option>
@@ -109,35 +88,18 @@ export default function AddItem() {
               <option value="other">Other</option>
             </Select>
           </FormControl>
-
           <FormControl isRequired>
             <FormLabel>Description</FormLabel>
-            <Textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Enter item description"
-            />
+            <Textarea value={description} onChange={(e) => setDescription(e.target.value)} />
           </FormControl>
-
           <FormControl isRequired>
             <FormLabel>Cover Image</FormLabel>
-            <Input
-              type="file"
-              accept="image/*"
-              onChange={(e) => setCoverImage(e.target.files[0])}
-            />
+            <Input type="file" accept="image/*" onChange={(e) => setCoverImage(e.target.files[0])} />
           </FormControl>
 
-          <Button
-            type="submit"
-            isLoading={loading}
-            loadingText="Adding Item..."
-            colorScheme="blue"
-            width="full"
-          >
+          <Button type="submit" colorScheme="blue" isLoading={loading} loadingText="Adding...">
             Add Item
           </Button>
-
           {success && (
             <Box mt="4" textAlign="center" color="green.500" fontWeight="semibold">
               ✅ Item added successfully!
