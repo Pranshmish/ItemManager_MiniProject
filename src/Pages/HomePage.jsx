@@ -1,51 +1,77 @@
-import { Box, Flex, Button, Heading, useColorModeValue } from "@chakra-ui/react";
-import { Link } from "react-router-dom";
+import React from "react";
+import {
+  Box,
+  Button,
+  Flex,
+  Heading,
+  Spacer,
+  Text,
+  Menu,
+  MenuButton,
+  MenuList,
+  MenuItem,
+  Avatar,
+  IconButton,
+} from "@chakra-ui/react";
+import { Link, useNavigate } from "react-router-dom";
 
-export default function HomePage() {
-  const bg = useColorModeValue("gray.50", "gray.900");
-  const btnShadow = useColorModeValue("md", "dark-lg");
+export default function HomePage({ isAuthenticated, setIsAuthenticated }) {
+  const navigate = useNavigate();
+  const user = JSON.parse(localStorage.getItem("user"));
+
+  const handleLogout = () => {
+    localStorage.removeItem("auth");
+    localStorage.removeItem("user");
+    setIsAuthenticated(false);
+    navigate("/login");
+  };
 
   return (
-    <Box
-      minH="100vh"
-      bg={bg}
-      display="flex"
-      flexDirection="column"
-      justifyContent="center"
-      alignItems="center"
-      px={4}
-    >
-      <Heading mb={10} size="2xl" color="blue.600" textAlign="center">
-        Welcome to Item Manager
-      </Heading>
-
-      <Flex direction={{ base: "column", md: "row" }} gap={6}>
-        <Button
-          as={Link}
-          to="/additems"
-          size="lg"
-          px={10}
-          py={6}
-          colorScheme="blue"
-          boxShadow={btnShadow}
-          _hover={{ transform: "scale(1.05)" }}
-        >
-          ➕ Add Items
-        </Button>
-
-        <Button
-          as={Link}
-          to="/viewitems"
-          size="lg"
-          px={10}
-          py={6}
-          colorScheme="teal"
-          boxShadow={btnShadow}
-          _hover={{ transform: "scale(1.05)" }}
-        >
-          📋 View Items
-        </Button>
+    <Box minH="100vh" px={8} py={4} bg="gray.50">
+      <Flex align="center" mb={8}>
+        <Heading size="lg" color="teal.500">
+          Item Manager
+        </Heading>
+        <Spacer />
+        {isAuthenticated ? (
+          <Menu>
+            <MenuButton
+              as={IconButton}
+              icon={<Avatar size="sm" name={user?.name || "User"} />}
+              variant="ghost"
+            />
+            <MenuList>
+              <MenuItem as={Link} to="/profile">Profile</MenuItem>
+              <MenuItem onClick={handleLogout}>Logout</MenuItem>
+            </MenuList>
+          </Menu>
+        ) : (
+          <Button colorScheme="teal" onClick={() => navigate("/login")}>
+            Login
+          </Button>
+        )}
       </Flex>
+      <Box textAlign="center" mt={20}>
+        <Heading>Welcome to Item Manager</Heading>
+        <Text fontSize="lg" mt={4} color="gray.600">
+          Manage your inventory easily and efficiently.
+        </Text>
+
+        {isAuthenticated ? (
+          <Flex justify="center" gap={4} mt={8}>
+            <Button colorScheme="teal" onClick={() => navigate("/additems")}>
+              Add Items
+            </Button>
+            <Button colorScheme="blue" onClick={() => navigate("/viewitems")}>
+              View Items
+            </Button>
+          </Flex>
+        ) : (
+          <Text mt={8} fontSize="md" fontWeight="semibold" color="red.500">
+            🚨 Please login to proceed further.
+          </Text>
+        )}
+      </Box>
     </Box>
   );
 }

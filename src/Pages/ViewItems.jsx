@@ -11,11 +11,13 @@ import {
   Flex,
   useColorModeValue,
 } from "@chakra-ui/react";
-import { useState } from "react";
 import { useDisclosure } from "@chakra-ui/react";
 import { DeleteIcon } from "@chakra-ui/icons";
 import { Link } from "react-router-dom";
 import ItemModal from "@/Components/ItemModal";
+import { collection, doc, getDoc, setDoc, deleteDoc } from "firebase/firestore";
+import { db } from "../Firebase/firebaseConfig.js";
+import { useEffect, useState } from "react";
 
 export default function ViewItems() {
   const bg = useColorModeValue("gray.50", "gray.900");
@@ -24,15 +26,45 @@ export default function ViewItems() {
 
   const [clickedItem, setClickedItem] = useState(null);
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const [items, setItems] = useState([]);
 
-  const existing = JSON.parse(localStorage.getItem("Items") || "[]");
-  const [items, setItems] = useState(existing);
+  useEffect(() => {
+    const fetchItems = async () => {
+      try {
+        const docRef = doc(db, "ItemsCollection", "itemsData");
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          setItems(data.items || []);
+        } else {
+          console.log("No items found in Firebase.");
+        }
+      } catch (error) {
+        console.error("Error fetching items:", error);
+      }
+    }
 
-  const handleDeleteItem = (indexToDelete) => {
-    const updated = items.filter((_, index) => index !== indexToDelete);
-    localStorage.setItem("Items", JSON.stringify(updated));
-    setItems(updated);
-  };
+    fetchItems();
+  }, [])
+
+
+
+  const handleDeleteItem = async (indexToDelete) => {
+  try {
+    const docRef = doc(db, "ItemsCollection", "itemsData");
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      const existingItems = docSnap.data().items || [];
+      const updatedItems = existingItems.filter((_, index) => index !== indexToDelete);
+
+      await setDoc(docRef, { items: updatedItems });
+      setItems(updatedItems);
+    }
+  } catch (error) {
+    console.error("Error deleting item:", error);
+  }
+};
+
 
   return (
     <Box minH="100vh" bg={bg} py={10} px={{ base: 4, md: 10 }}>

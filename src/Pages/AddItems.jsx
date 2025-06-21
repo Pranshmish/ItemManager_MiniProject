@@ -2,6 +2,10 @@ import { Box, Heading, VStack, FormControl, FormLabel, Input, Textarea, Select, 
 import { useState } from "react";
 import { Link } from "react-router-dom";
 
+import { db } from "../Firebase/firebaseConfig.js"
+import { doc, getDoc, setDoc } from "firebase/firestore";
+
+
 export default function AddItem() {
     const bg = useColorModeValue("blue.100", "white");
     const border = useColorModeValue("blue.900", "blue.700");
@@ -12,6 +16,8 @@ export default function AddItem() {
     const [coverImage, setCoverImage] = useState(null);
     const [additionalImage, setAdditionalImage] = useState([]);
     const [success, setSuccess] = useState(false);
+    const [loading, setLoading] = useState(false);
+
 
     const fileToBase64 = (file) =>
         new Promise((resolve, reject) => {
@@ -29,7 +35,8 @@ export default function AddItem() {
             return;
         }
 
-        const existing = JSON.parse(localStorage.getItem("Items")) || [];
+        setLoading(true);
+
         const coverBase64 = await fileToBase64(coverImage);
         const additionalBase64 = await Promise.all(
             additionalImage.map(fileToBase64)
@@ -43,16 +50,34 @@ export default function AddItem() {
             additionalImage: additionalBase64,
         };
 
-        const updatedItems = [...existing, newItem];
-        localStorage.setItem("Items", JSON.stringify(updatedItems));
+        const docRef = doc(db, "ItemsCollection", "itemsData");
 
-        setSuccess(true);
+        try {
+            const docSnap = await getDoc(docRef);
+            let existingItems = [];
+
+            if (docSnap.exists()) {
+                existingItems = docSnap.data().items || [];
+            }
+
+            const updatedItems = [...existingItems, newItem];
+
+            await setDoc(docRef, { items: updatedItems });
+
+            console.log("Item added successfully to Firebase.");
+            setSuccess(true);
+            setLoading(false);
+        } catch (error) {
+            console.error("Firebase Add Error:", error);
+        }
+
         setItemName("");
         setSelectedItem("");
         setDiscription("");
         setCoverImage(null);
         setAdditionalImage([]);
     };
+
 
 
     return (
@@ -97,6 +122,7 @@ export default function AddItem() {
                         <option value="pant">Pant</option>
                         <option value="shoes">Shoes</option>
                         <option value="sports">Sports Gear</option>
+                        <option value="other">other</option>
                     </Select>
                 </FormControl>
                 <FormControl isRequired>
@@ -151,6 +177,7 @@ export default function AddItem() {
                     border="1px solid"
                     borderColor={border}
                     boxShadow="lg"
+                    
                 >
                     <Heading size="lg" mb={6} textAlign="center" color="blue.600">
                         Add New Item
@@ -165,6 +192,8 @@ export default function AddItem() {
                             fontWeight="bold"
                             shadow="md"
                             _hover={{ bg: "blue.600" }}
+                            isLoading={loading}          
+                    loadingText="Adding Item..."
                         >
                             Add Item
                         </Button>
