@@ -3,8 +3,8 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 
 export default function AddItem() {
-    const bg = useColorModeValue("white", "gray.800");
-    const border = useColorModeValue("gray.200", "gray.700");
+    const bg = useColorModeValue("blue.100", "white");
+    const border = useColorModeValue("blue.900", "blue.700");
 
     const [itemName, setItemName] = useState("");
     const [selectedItem, setSelectedItem] = useState("");
@@ -135,26 +135,47 @@ export default function AddItem() {
                     />
                 </FormControl>
 
-                <Button
-                    width="full"
-                    colorScheme="blue"
-                    size="lg"
-                    fontWeight="bold"
-                    shadow="md"
-                    _hover={{ bg: "blue.600" }}
-
-                    onClick={handleAddItems}
+                <Box
+                    as="form"              
+                    onSubmit={handleAddItems} 
+                    maxW="2xl"
+                    mx="auto"
+                    mt={10}
+                    p={8}
+                    bg={bg}
+                    borderRadius="xl"
+                    border="1px solid"
+                    borderColor={border}
+                    boxShadow="lg"
                 >
-                    Add Item
-                </Button>
-                {success && (
-                    <Box mt="4" textAlign="center" color="green.500" fontWeight="semibold">
-                        ✅ Item added successfully!
-                        <Button as={Link} to="/viewitems" ml="4" size="sm" colorScheme="teal">
-                            View Items
+                    <Heading size="lg" mb={6} textAlign="center" color="blue.600">
+                        Add New Item
+                    </Heading>
+
+                    <VStack spacing={5}>
+                        <Button
+                            type="submit"           
+                            width="full"
+                            colorScheme="blue"
+                            size="lg"
+                            fontWeight="bold"
+                            shadow="md"
+                            _hover={{ bg: "blue.600" }}
+                        >
+                            Add Item
                         </Button>
-                    </Box>
-                )}
+
+                        {success && (
+                            <Box mt="4" textAlign="center" color="green.500" fontWeight="semibold">
+                                ✅ Item added successfully!
+                                <Button as={Link} to="/viewitems" ml="4" size="sm" colorScheme="teal">
+                                    View Items
+                                </Button>
+                            </Box>
+                        )}
+                    </VStack>
+                </Box>
+
             </VStack>
         </Box>
     );
