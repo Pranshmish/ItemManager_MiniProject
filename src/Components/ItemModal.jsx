@@ -38,19 +38,6 @@ export default function ItemModal({ isOpen, onClose, item }) {
             <Text>{item.discription}</Text>
 
             <Text fontWeight="bold">Gallery:</Text>
-            <Box display="flex" overflowX="auto" gap={3}>
-              {item.additionalImage?.map((img, idx) => (
-                <Image
-                  key={idx}
-                  src={img || "https://via.placeholder.com/150"}
-                  alt={`Additional ${idx + 1}`}
-                  borderRadius="md"
-                  boxSize="100px"
-                  objectFit="cover"
-                />
-              ))}
-            </Box>
-
             <Button colorScheme="blue" mt={4} width="full">
               Enquire
             </Button>

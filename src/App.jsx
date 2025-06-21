@@ -15,8 +15,8 @@ function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<HomePage isAuthenticated={isAuthenticated} 
-    setIsAuthenticated={setIsAuthenticated}  />} />
+        <Route path="/" element={<HomePage isAuthenticated={isAuthenticated}
+          setIsAuthenticated={setIsAuthenticated} />} />
         <Route path="/additems" element={<AddItems />} />
         <Route path="/viewitems" element={<ViewItems />} />
         <Route path="/login" element={<Login onLogin={() => setIsAuthenticated(true)} />} />

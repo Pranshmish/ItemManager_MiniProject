@@ -14,10 +14,9 @@ import {
 import { useDisclosure } from "@chakra-ui/react";
 import { DeleteIcon } from "@chakra-ui/icons";
 import { Link } from "react-router-dom";
-import ItemModal from "@/Components/ItemModal";
-import { collection, doc, getDoc, setDoc, deleteDoc } from "firebase/firestore";
-import { ref, deleteObject } from "firebase/storage";
-import { db, storage } from "../Firebase/firebaseConfig.js";
+import ItemModal from "../Components/ItemModal.jsx"
+import { doc, getDoc, setDoc } from "firebase/firestore";
+import { db } from "../Firebase/firebaseConfig.js";
 import { useEffect, useState } from "react";
 
 export default function ViewItems() {
@@ -54,18 +53,6 @@ export default function ViewItems() {
       const docSnap = await getDoc(docRef);
       if (docSnap.exists()) {
         const existingItems = docSnap.data().items || [];
-        const itemToDelete = existingItems[indexToDelete];
-
-        // Delete images from Firebase Storage
-        if (itemToDelete.coverImagePath) {
-          await deleteObject(ref(storage, itemToDelete.coverImagePath));
-        }
-        if (itemToDelete.additionalImagePaths) {
-          for (const path of itemToDelete.additionalImagePaths) {
-            await deleteObject(ref(storage, path));
-          }
-        }
-
         const updatedItems = existingItems.filter((_, index) => index !== indexToDelete);
 
         await setDoc(docRef, { items: updatedItems });
@@ -89,6 +76,7 @@ export default function ViewItems() {
           Add Item
         </Button>
       </Flex>
+
       <Grid templateColumns="repeat(auto-fill, minmax(250px, 1fr))" gap={6}>
         {items.map((item, index) => (
           <GridItem
@@ -125,7 +113,7 @@ export default function ViewItems() {
               }}
             />
             <Image
-              src={item.coverImageURL}
+              src={item.coverImage}
               alt={item.itemName}
               width="100%"
               height="200px"
@@ -142,7 +130,9 @@ export default function ViewItems() {
           </GridItem>
         ))}
       </Grid>
-      <ItemModal isOpen={isOpen} onClose={onClose} item={clickedItem} />
+      {clickedItem && (
+        <ItemModal isOpen={isOpen} onClose={onClose} item={clickedItem} />
+      )}
     </Box>
   );
 }

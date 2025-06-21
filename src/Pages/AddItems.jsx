@@ -12,10 +12,8 @@ import {
 } from "@chakra-ui/react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { db, storage } from "../Firebase/firebaseConfig.js";
+import { db } from "../Firebase/firebaseConfig.js";
 import { collection, addDoc } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { v4 as uuidv4 } from "uuid";
 
 export default function AddItem() {
   const bg = useColorModeValue("blue.100", "white");
@@ -23,39 +21,37 @@ export default function AddItem() {
 
   const [itemName, setItemName] = useState("");
   const [selectedItem, setSelectedItem] = useState("");
-  const [discription, setDiscription] = useState("");
+  const [description, setDescription] = useState("");
   const [coverImage, setCoverImage] = useState(null);
-  const [additionalImage, setAdditionalImage] = useState([]);
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const uploadFile = async (file) => {
-    const fileRef = ref(storage, `itemImages/${uuidv4()}-${file.name}`);
-    await uploadBytes(fileRef, file);
-    return getDownloadURL(fileRef);
-  };
+  const fileToBase64 = (file) =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = (error) => reject(error);
+    });
 
   const handleAddItems = async (e) => {
     e.preventDefault();
-    if (!itemName || !selectedItem || !discription || !coverImage) {
+
+    if (!itemName || !selectedItem || !description || !coverImage) {
       alert("Please fill all required fields.");
       return;
     }
 
     setLoading(true);
-
     try {
-      const coverURL = await uploadFile(coverImage);
-      const additionalURLs = await Promise.all(
-        additionalImage.map(uploadFile)
-      );
+      const coverBase64 = await fileToBase64(coverImage);
 
       const newItem = {
         itemName,
-        selectedItem,
-        discription,
-        coverImage: coverURL,
-        additionalImage: additionalURLs,
+        itemType: selectedItem,
+        description,
+        coverImage: coverBase64,
+        createdAt: new Date(),
       };
 
       await addDoc(collection(db, "ItemsCollection"), newItem);
@@ -63,13 +59,12 @@ export default function AddItem() {
       setSuccess(true);
       setItemName("");
       setSelectedItem("");
-      setDiscription("");
+      setDescription("");
       setCoverImage(null);
-      setAdditionalImage([]);
     } catch (error) {
       console.error("Firebase Add Error:", error);
+      alert("Failed to add item.");
     }
-
     setLoading(false);
   };
 
@@ -92,23 +87,18 @@ export default function AddItem() {
       <form onSubmit={handleAddItems}>
         <VStack spacing={5}>
           <FormControl isRequired>
-            <FormLabel fontWeight="semibold" color="gray.600">
-              Item Name
-            </FormLabel>
+            <FormLabel>Item Name</FormLabel>
             <Input
-              placeholder="Enter item name"
-              focusBorderColor="blue.400"
               value={itemName}
               onChange={(e) => setItemName(e.target.value)}
+              placeholder="Enter item name"
             />
           </FormControl>
+
           <FormControl isRequired>
-            <FormLabel fontWeight="semibold" color="gray.600">
-              Item Type
-            </FormLabel>
+            <FormLabel>Item Type</FormLabel>
             <Select
               placeholder="Select item type"
-              focusBorderColor="blue.400"
               value={selectedItem}
               onChange={(e) => setSelectedItem(e.target.value)}
             >
@@ -119,69 +109,39 @@ export default function AddItem() {
               <option value="other">Other</option>
             </Select>
           </FormControl>
+
           <FormControl isRequired>
-            <FormLabel fontWeight="semibold" color="gray.600">
-              Description
-            </FormLabel>
+            <FormLabel>Description</FormLabel>
             <Textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
               placeholder="Enter item description"
-              resize="vertical"
-              focusBorderColor="blue.400"
-              value={discription}
-              onChange={(e) => setDiscription(e.target.value)}
             />
           </FormControl>
+
           <FormControl isRequired>
-            <FormLabel fontWeight="semibold" color="gray.600">
-              Cover Image
-            </FormLabel>
+            <FormLabel>Cover Image</FormLabel>
             <Input
               type="file"
               accept="image/*"
-              variant="flushed"
               onChange={(e) => setCoverImage(e.target.files[0])}
             />
           </FormControl>
-          <FormControl>
-            <FormLabel fontWeight="semibold" color="gray.600">
-              Additional Images
-            </FormLabel>
-            <Input
-              type="file"
-              accept="image/*"
-              multiple
-              variant="flushed"
-              onChange={(e) => setAdditionalImage(Array.from(e.target.files))}
-            />
-          </FormControl>
+
           <Button
             type="submit"
-            width="full"
-            colorScheme="blue"
-            size="lg"
-            fontWeight="bold"
-            shadow="md"
-            _hover={{ bg: "blue.600" }}
             isLoading={loading}
             loadingText="Adding Item..."
+            colorScheme="blue"
+            width="full"
           >
             Add Item
           </Button>
+
           {success && (
-            <Box
-              mt="4"
-              textAlign="center"
-              color="green.500"
-              fontWeight="semibold"
-            >
+            <Box mt="4" textAlign="center" color="green.500" fontWeight="semibold">
               ✅ Item added successfully!
-              <Button
-                as={Link}
-                to="/viewitems"
-                ml="4"
-                size="sm"
-                colorScheme="teal"
-              >
+              <Button as={Link} to="/viewitems" ml="4" size="sm" colorScheme="teal">
                 View Items
               </Button>
             </Box>
