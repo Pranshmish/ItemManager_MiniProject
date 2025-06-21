@@ -1,7 +1,4 @@
-import {
-  Box, Heading, VStack, FormControl, FormLabel, Input,
-  Textarea, Select, Button, useColorModeValue
-} from "@chakra-ui/react";
+import { Box, Heading, VStack, FormControl, FormLabel, Input,Textarea, Select, Button, useColorModeValue} from "@chakra-ui/react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { db } from "../Firebase/firebaseConfig";
@@ -38,8 +35,8 @@ export default function AddItem() {
       const coverBase64 = await fileToBase64(coverImage);
     const newItem = {
   itemName,
-  itemType: selectedItem, // Rename here!
-  description,            // Fix typo from discription
+  itemType: selectedItem, 
+  description,            
   coverImage: coverBase64,
 };
 

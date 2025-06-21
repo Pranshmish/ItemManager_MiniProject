@@ -1,12 +1,5 @@
 import React, { useEffect, useState } from "react";
-import {
-  Box,
-  Heading,
-  Text,
-  VStack,
-  Avatar,
-  Button,
-} from "@chakra-ui/react";
+import {Box,Heading,Text,VStack,Avatar,Button,} from "@chakra-ui/react";
 import { useNavigate } from "react-router-dom";
 
 export default function ProfilePage({ setIsAuthenticated }) {
